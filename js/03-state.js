@@ -68,6 +68,8 @@
       mundisDialogActive: false,
       mundisDialogIndex: 0,
       mundisSpecialLine: null,
+      mundisSpecialLines: [],
+      mundisSpecialIndex: 0,
       mundisQuotes: [],
       mundisSacrifice: BN.zero(),
       renPassive: 0,
@@ -76,7 +78,18 @@
       nucleusResets: 0,
       nucleusReached: false,
       vcv4Unlocked: false,
+      vcv5Unlocked: false,
       battleUnlocked: false,
+      chaosUnlocked: false,
+      chaosCount: 0,
+      shadowSouls: BN.zero(),
+      lightSouls: BN.zero(),
+      rawStones: [],
+      gems: [],
+      gemSlots: [null, null],
+      refining: null,
+      chaosUnequipOnReset: false,
+      mundis1e1000Seen: false,
       battle: freshBattle(),
       nucleusIntroSeen: false,
       mu: new Array(15).fill(0),
@@ -127,8 +140,8 @@
   let S = fresh();
 
   function save() {
-    try { localStorage.setItem(SAVE, JSON.stringify(S)); el.saved.textContent = '已保存'; }
-    catch (e) { el.saved.textContent = '保存失败'; }
+    try { localStorage.setItem(SAVE, JSON.stringify(S)); el.saved.textContent = tr('已保存', 'Saved'); }
+    catch (e) { el.saved.textContent = tr('保存失败', 'Save failed'); }
   }
 
   function load() {
@@ -210,6 +223,8 @@
       S.mundisDialogActive = !!S.mundisDialogActive;
       S.mundisDialogIndex = isFinite(S.mundisDialogIndex) && S.mundisDialogIndex >= 0 ? Math.floor(S.mundisDialogIndex) : 0;
       S.mundisSpecialLine = typeof S.mundisSpecialLine === 'string' ? S.mundisSpecialLine : null;
+      S.mundisSpecialLines = Array.isArray(S.mundisSpecialLines) ? S.mundisSpecialLines.filter(x => typeof x === 'string') : [];
+      S.mundisSpecialIndex = isFinite(S.mundisSpecialIndex) && S.mundisSpecialIndex >= 0 ? Math.floor(S.mundisSpecialIndex) : 0;
       if (!Array.isArray(S.mundisQuotes)) S.mundisQuotes = [];
       S.mundisSacrifice = BN.max(BN.zero(), BN.from(S.mundisSacrifice));
       S.renPassive = isFinite(S.renPassive) && S.renPassive >= 0 ? S.renPassive : 0;
@@ -219,7 +234,18 @@
       S.nucleusReached = !!S.nucleusReached;
       S.nucleusIntroSeen = !!S.nucleusIntroSeen;
       S.vcv4Unlocked = !!S.vcv4Unlocked;
+      S.vcv5Unlocked = !!S.vcv5Unlocked;
       S.battleUnlocked = !!S.battleUnlocked;
+      S.chaosUnlocked = !!S.chaosUnlocked;
+      S.chaosCount = isFinite(S.chaosCount) ? Math.floor(S.chaosCount) : 0;
+      S.shadowSouls = BN.max(BN.zero(), BN.from(S.shadowSouls || 0));
+      S.lightSouls = BN.max(BN.zero(), BN.from(S.lightSouls || 0));
+      S.rawStones = Array.isArray(S.rawStones) ? S.rawStones : [];
+      S.gems = Array.isArray(S.gems) ? S.gems : [];
+      S.gemSlots = Array.isArray(S.gemSlots) && S.gemSlots.length === 2 ? S.gemSlots : [null, null];
+      S.refining = S.refining && typeof S.refining === 'object' ? S.refining : null;
+      S.chaosUnequipOnReset = !!S.chaosUnequipOnReset;
+      S.mundis1e1000Seen = !!S.mundis1e1000Seen;
       {
         const fb = freshBattle();
         S.battle = Object.assign(fb, S.battle || {});
@@ -288,7 +314,7 @@
       S.autoRenOn = !!S.autoRenOn;
       S.autoRuOn = !!S.autoRuOn;
       S.autoRenAt = numOrNull(S.autoRenAt);
-      S.lang = S.lang === 'en' ? 'en' : 'zh';
+      S.lang = typeof S.lang === 'string' && (typeof I18N === 'undefined' || I18N.has(S.lang)) ? S.lang : 'zh';
       S.confirmRen = S.confirmRen !== false;
       S.confirmFlower = S.confirmFlower !== false;
       S.confirmSac = S.confirmSac !== false;

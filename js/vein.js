@@ -1,7 +1,8 @@
 'use strict';
 
   function envStepBase() {
-    const raw = BN.from(CFG.capGrowth).mul(BN.from(1 + flowerEff())).mul(ruOn(6) ? 10 : 1);
+    let raw = BN.from(CFG.capGrowth).mul(BN.from(1 + flowerEff())).mul(ruOn(6) ? 10 : 1);
+    if (typeof gemBonuses === 'function') raw = raw.mul(BN.from(gemBonuses().env));
     if (raw.cmp(1e12) > 0) {
       const x = raw.div(1e12).toNumber();
       const t = 1e12 * (Math.sqrt(3 + Math.log10(9 + (isFinite(x) ? x : Number.MAX_VALUE))) - 1);
@@ -62,6 +63,11 @@ function outRate(i, m) {
       r = r.div(S.antimatter.pow(0.6));
     }
     if (S.nucleusIn) r = r.pow(0.4);
+    if (typeof gemBonuses === 'function') {
+      const gb = gemBonuses();
+      r = r.mul(BN.from(gb.cv));
+      if (S.nucleusIn && gb.nucleus !== 1) r = r.pow(gb.nucleus);
+    }
     return r;
   }
 
@@ -80,6 +86,7 @@ function outRate(i, m) {
     }
     if (i === 2) return !!S.nucleusReached;
     if (i === 3) return !!S.vcv4Unlocked;
+    if (i === 4) return !!S.vcv5Unlocked;
     return false;
   }
 
@@ -89,6 +96,10 @@ function outRate(i, m) {
     let m = BN.from(VCV_BASE[i]).pow(S.vcvBought[i]).mul(BN.from(10).pow(S.vcvUp)).mul(rc * rc2);
     if (S.battle && S.battle.exu[13]) m = m.mul(BN.from(1 + S.battle.kills / 100));
     if (S.battle && S.battle.exu[17] && i === 5) m = m.mul(BN.from(1 + Math.sqrt(Math.max(0, S.battle.xpMax))));
+    if (S.mundisSacrifice.cmp(BN.from({ msg: 800, layer: 1 })) >= 0) {
+      m = m.mul(BN.max(BN.one(), S.cells.log10()));
+    }
+    if (typeof gemBonuses === 'function') m = m.mul(BN.from(gemBonuses().vcv));
     if (S.nucleusIn) {
       if (S.mu[0] > 0) m = m.mul(BN.from(2).pow(S.mu[0]));
       if (i === 0 && S.mu[8] > 0) m = m.mul(BN.one().add(BN.from(S.flower).pow(0.1)));
@@ -356,7 +367,7 @@ function outRate(i, m) {
       if (S.leyFastest === null || lt < S.leyFastest) S.leyFastest = lt;
       const rate = BN.one().div(lt);
       if (S.leyBestRate === null || rate.cmp(S.leyBestRate) > 0) S.leyBestRate = rate;
-      pushResetLog('ley', lt, '+1 级', fmt(rate), false);
+      pushResetLog('ley', lt, '+1 ' + tr('级'), fmt(rate), false);
     }
     S.leyTime = 0;
     S.ley += 1;
@@ -386,7 +397,7 @@ function outRate(i, m) {
       if (S.leyFastest === null || lt < S.leyFastest) S.leyFastest = lt;
       const rate = BN.from(levels).div(lt);
       if (S.leyBestRate === null || rate.cmp(S.leyBestRate) > 0) S.leyBestRate = rate;
-      pushResetLog('ley', lt, '+' + levels + ' 级', fmt(rate), false);
+      pushResetLog('ley', lt, '+' + levels + ' ' + tr('级'), fmt(rate), false);
     }
     S.leyTime = 0;
     S.cells = BN.from(startCells());
@@ -402,9 +413,35 @@ function outRate(i, m) {
   }
 
   function buyFlowerMax(limit) {
-    const lim = isFinite(limit) ? Math.max(0, Math.floor(limit)) : 10000;
-    let n = 0;
-    while (n < lim && buyFlower(true)) n += 1;
+    const lim = isFinite(limit) ? Math.max(0, Math.floor(limit)) : Number.MAX_SAFE_INTEGER;
+    const inc = CFG.flower.growth - (ruOn(7) ? 1 : 0);
+    const p = CFG.flower.base + inc * S.flower;
+    const budget = Math.max(0, S.ley);
+    if (budget < p) return 0;
+    let n = Math.floor(budget / p);
+    if (!isFinite(n)) n = lim;
+    n = Math.min(lim, Math.max(0, n));
+    if (n <= 0) return 0;
+    const ft = S.flowerTime;
+    S.flowerResets += n;
+    if (ft > 0) {
+      if (S.flowerFastest === null || ft < S.flowerFastest) S.flowerFastest = ft;
+      const rate = BN.from(n).div(ft);
+      if (S.flowerBestRate === null || rate.cmp(S.flowerBestRate) > 0) S.flowerBestRate = rate;
+      pushResetLog('flower', ft, '+' + n + ' ' + tr('朵'), fmt(rate), false);
+    }
+    S.flowerTime = 0;
+    S.flower += n;
+    S.cells = BN.from(startCells());
+    S.n = zeros();
+    S.bought = [0,0,0,0,0,0];
+    S.tierX = ones();
+    S.cap = 0;
+    S.ley = S.renFreeLey;
+    S.sacrifice = BN.one();
+    S.sacrificeAt = BN.zero();
+    S.time = 0;
+    S.ru34NoHigh = true;
     return n;
   }
 
@@ -412,7 +449,7 @@ function outRate(i, m) {
     if (ncOn(8) || S.rcActive === 7) return false;
     const need = flowerNeed();
     if (S.ley < need) return false;
-    if (!silent && !ask(S.confirmFlower, '地脉之花会清空：细胞、全部地脉、普通地脉提升、环境上限提升、献祭。\n声望免费地脉提升会保留。继续？')) return false;
+    if (!silent && !ask(S.confirmFlower, tr('地脉之花会清空：细胞、全部地脉、普通地脉提升、环境上限提升、献祭。\n声望免费地脉提升会保留。继续？'))) return false;
     const noSac = S.sacrifice.cmp(1.0000001) < 0;
     const ft = S.flowerTime;
     S.flowerResets += 1;
@@ -420,7 +457,7 @@ function outRate(i, m) {
       if (S.flowerFastest === null || ft < S.flowerFastest) S.flowerFastest = ft;
       const rate = BN.one().div(ft);
       if (S.flowerBestRate === null || rate.cmp(S.flowerBestRate) > 0) S.flowerBestRate = rate;
-      pushResetLog('flower', ft, '+1 朵', fmt(rate), false);
+      pushResetLog('flower', ft, '+1 ' + tr('朵'), fmt(rate), false);
     }
     S.flowerTime = 0;
     S.flower += 1;

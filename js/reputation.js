@@ -53,6 +53,7 @@ function ru21Mul() {
     let g = e.exp10().mul(double).mul(S.ncDone[2] ? 10 : 1);
     if (S.rcDone[7]) g = g.mul(BN.max(BN.one(), S.mundisSacrifice).pow(0.1));
     if (S.battle && S.battle.weapon === 'urchin') g = g.pow(1.05);
+    if (typeof gemBonuses === 'function') g = g.mul(BN.from(gemBonuses().renown));
     return g.floor();
   }
 
@@ -161,11 +162,16 @@ function ru21Mul() {
       if (S.renFastest === null || rt < S.renFastest) S.renFastest = rt;
       const rate = fmt(gain.div(rt));
       if (S.renBestRate === null || gain.div(rt).cmp(S.renBestRate) > 0) S.renBestRate = gain.div(rt);
-      pushResetLog('ren', rt, fmt(gain), rate, challengeName || (challengeReset ? '挑战' : null));
+      pushResetLog('ren', rt, fmt(gain), rate, challengeName || (challengeReset ? tr('挑战') : null));
     }
-    if (!silent && !ask(S.confirmRen, '声望重置会清空上一轮的所有进度：细胞、地脉、环境上限、普通地脉提升、花与献祭。\n' +
+    if (!silent && !ask(S.confirmRen, trf(
+      '声望重置会清空上一轮的所有进度：细胞、地脉、环境上限、普通地脉提升、花与献祭。\n' +
       '保留：声望结晶/总声望结晶、5 个可重复升级、10 个一次性升级、免费地脉提升、自动购买器设置。\n' +
-      '本次获得 ' + fmt(gain) + ' 声望结晶，继续？')) return false;
+      '本次获得 {gain} 声望结晶，继续？',
+      'Renown reset clears all progress from the previous run: cells, leylines, env cap, normal leyline boost, flowers and sacrifice.\n' +
+      'Kept: renown crystals/total crystals, 5 repeatable upgrades, 10 one-time upgrades, free leyline boost, auto-buyer settings.\n' +
+      'This run gains {gain} renown crystals. Continue?',
+      { gain: fmt(gain) }))) return false;
 
     S.renown = S.renown.add(gain);
     S.renownTotal = S.renownTotal.add(gain);

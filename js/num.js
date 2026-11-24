@@ -228,24 +228,22 @@ return this.log10().cmp(o.log10());
 
   function fmtT(s) {
     if (!isFinite(s) || s > 3.2e9) return '—';
-    const en = S.lang === 'en';
-    if (s <= 0.5) return en ? 'Ready' : '就绪';
-    if (s < 60) return Math.ceil(s) + (en ? 's' : '秒');
-    if (s < 3600) return Math.floor(s / 60) + (en ? 'm' : '分') + Math.ceil(s % 60) + (en ? 's' : '秒');
-    if (s < 86400) return (s / 3600).toFixed(1) + (en ? 'h' : '小时');
-    if (s < 86400 * 365) return (s / 86400).toFixed(1) + (en ? 'd' : '天');
-    return (s / 86400 / 365).toFixed(1) + (en ? 'y' : '年');
+    if (s <= 0.5) return tr('就绪', 'Ready');
+    if (s < 60) return Math.ceil(s) + tr('秒', 's');
+    if (s < 3600) return Math.floor(s / 60) + tr('分', 'm') + Math.ceil(s % 60) + tr('秒', 's');
+    if (s < 86400) return (s / 3600).toFixed(1) + tr('小时', 'h');
+    if (s < 86400 * 365) return (s / 86400).toFixed(1) + tr('天', 'd');
+    return (s / 86400 / 365).toFixed(1) + tr('年', 'y');
   }
 
   function fmtDur(s) {
     if (!isFinite(s) || s < 0) return '—';
-    const en = S.lang === 'en';
-    if (s < 1) return s.toFixed(1) + (en ? 's' : '秒');
-    if (s < 60) return Math.floor(s) + (en ? 's' : '秒');
-    if (s < 3600) return Math.floor(s / 60) + (en ? 'm' : '分') + Math.floor(s % 60) + (en ? 's' : '秒');
-    if (s < 86400) return (s / 3600).toFixed(1) + (en ? 'h' : '小时');
-    if (s < 86400 * 365) return (s / 86400).toFixed(1) + (en ? 'd' : '天');
-    return (s / 86400 / 365).toFixed(1) + (en ? 'y' : '年');
+    if (s < 1) return s.toFixed(1) + tr('秒', 's');
+    if (s < 60) return Math.floor(s) + tr('秒', 's');
+    if (s < 3600) return Math.floor(s / 60) + tr('分', 'm') + Math.floor(s % 60) + tr('秒', 's');
+    if (s < 86400) return (s / 3600).toFixed(1) + tr('小时', 'h');
+    if (s < 86400 * 365) return (s / 86400).toFixed(1) + tr('天', 'd');
+    return (s / 86400 / 365).toFixed(1) + tr('年', 'y');
   }
 
 function logDelta(x, y) {

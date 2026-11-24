@@ -123,6 +123,13 @@
   .tab:hover:not(:disabled){background:transparent;color:var(--txt)}
   .tab.active{color:var(--gold);border-bottom-color:var(--gold)}
   .tab-ren{color:var(--ren)}
+  .tab-chaos{color:#f26d21}
+  #tab-chaos h2,#tab-chaos .stat-tab.active,#tab-chaos .ren-row-title{color:#f26d21}
+  #tab-chaos .stat-tab.active{border-bottom-color:#f26d21}
+  #tab-chaos .ren-price,#tab-chaos .ren-owned{color:#f26d21}
+  #tab-chaos .ren-card{border-color:#f26d21}
+  #tab-chaos .ren-card h3,#tab-chaos .ren-fx,#tab-chaos .ren-price{color:#f26d21}
+  #tab-chaos .ren-card .mini{border-color:#f26d21;color:#f26d21}
   .tab-ren:hover:not(:disabled){background:transparent;color:var(--ren)}
   .tab-ren.active{color:var(--ren);border-bottom-color:var(--ren)}
   .tab-nc{color:var(--orange)}
@@ -350,6 +357,13 @@
   .quick-ren b{font-size:15px;font-weight:800;color:#fff}
   .quick-ren:hover{background:#12351a}
   .quick-ren:disabled{opacity:.45;cursor:not-allowed}
+  .quick-chaos{position:fixed;left:114px;top:50%;transform:translateY(-50%);z-index:45;
+    display:flex;flex-direction:column;align-items:center;gap:3px;width:96px;
+    background:#2a130b;border:1px solid #f26d21;border-radius:10px;padding:9px 6px;
+    color:#f26d21;font-size:11px;cursor:pointer}
+  .quick-chaos b{font-size:15px;font-weight:800;color:#fff}
+  .quick-chaos:hover{background:#3b1a0d}
+  .quick-chaos:disabled{opacity:.45;cursor:not-allowed}
   .challenge-now{max-width:1080px;margin:10px auto 0;padding:7px 12px;border:1px solid var(--line);
     background:var(--panel);border-radius:9px;display:flex;align-items:center;justify-content:space-between;
     gap:12px;font-size:12px;color:var(--dim)}
@@ -376,11 +390,18 @@
     75%{transform:scale(1.06) rotate(-9deg)}
     100%{transform:scale(1) rotate(-8deg);opacity:1}
   }
+  /* Latīna: long words need a little more breathing room */
+  html[lang="la"] .tab,html[lang="la"] .stat-tab,html[lang="la"] .sub-tab{letter-spacing:.05em}
+  html[lang="la"] .rule{white-space:normal}
+  html[lang="la"] .mundis-buff,html[lang="la"] .set-line,html[lang="la"] .mundis-offer{flex-wrap:wrap}
+  html[lang="la"] .ren-card h3,html[lang="la"] .nc-card h3,html[lang="la"] .tname{line-height:1.35}
+  html[lang="la"] .auto-name{font-size:10px}
 </style>
 </head>
 <body>
 
 <button id="quickRenBtn" class="quick-ren" hidden><span>声望重置</span><b id="quickRenGain">0</b></button>
+<button id="quickChaosBtn" class="quick-chaos" hidden><span>混 沌</span><b id="quickChaosGain">0</b></button>
 <div id="challengeNow" class="challenge-now"><span id="challengeNowText">你现在在细胞宇宙中。</span><button id="challengeNowBtn" class="mini" hidden>放弃挑战</button></div>
 <div id="notice" class="notice" hidden></div>
 
@@ -414,6 +435,7 @@
     <button class="tab tab-nc" id="tabNcBtn" hidden>挑 战 <span id="ncTabState">🔒</span></button>
     <button class="tab tab-deity" id="tabDeityBtn" hidden>天 神</button>
     <button class="tab tab-ren" id="tabRenBtn" hidden>声 望 <span id="renTabState">🔒</span></button>
+    <button class="tab tab-chaos" id="chaosTabBtn" hidden>混 沌</button>
     <button class="tab tab-stat" id="tabStatBtn">统 计</button>
     <button class="tab tab-set" id="tabSetBtn">设 置</button>
   </nav>
@@ -673,7 +695,7 @@
           <div id="battleBag"></div>
         </aside>
         <div class="battle-field">
-          <div class="battle-actions"><button id="battleAttackBtn">攻击</button><button id="battleAutoBtn" class="mini">自动攻击：开</button><button id="battleFleeBtn" class="mini" hidden>逃跑</button><button id="battleSpawnBtn" class="mini" hidden>刷新：开</button><span id="battleMonsterHint"></span></div>
+          <div class="battle-actions"><button id="battleAttackBtn">发起攻击</button><button id="battleAutoBtn" class="mini">自动攻击：开</button><button id="battleFleeBtn" class="mini" hidden>逃跑</button><button id="battleSpawnBtn" class="mini" hidden>刷新：开</button><span id="battleMonsterHint"></span></div>
           <div id="battleMonsters"></div>
         </div>
       </div>
@@ -683,6 +705,38 @@
       <div id="exuGrid" class="ren-upgrades"></div>
     </div>
   </section>
+
+  <section id="tab-chaos" class="tab-panel">
+    <div class="nc-head">
+      <h2>混 沌</h2>
+      <p>第二层大重置。混沌次数：<b id="chaosCount">0</b></p>
+    </div>
+    <div class="stat-tabs">
+      <button class="stat-tab active" id="chaosGemBtn">宝石</button>
+      <button class="stat-tab" id="chaosRefineBtn">炼化</button>
+      <button class="stat-tab" id="chaosUpBtn">混沌升级</button>
+      <button class="stat-tab" id="chaosMsBtn">混沌里程碑</button>
+    </div>
+    <div id="chaosGemPane" class="stat-pane">
+      <div class="set-hint">暗影之魂 <b id="shadowSouls">0</b> · 光明之魂 <b id="lightSouls">0</b></div>
+      <div class="ren-row-title">装备宝石</div>
+      <div id="gemSlots" class="ren-upgrades"></div>
+      <label class="set-hint"><input type="checkbox" id="chaosUnequipCheck"> 混沌时卸下宝石</label>
+      <div class="ren-row-title">物品栏</div>
+      <div id="gemBag" class="ren-upgrades"></div>
+    </div>
+    <div id="chaosRefinePane" class="stat-pane" hidden>
+      <p class="set-hint">炼化：将宝石原石炼化为宝石。详细炼化界面接入中。</p>
+      <div id="rawStoneList" class="ren-upgrades"></div>
+    </div>
+    <div id="chaosUpPane" class="stat-pane" hidden>
+      <p class="set-hint">混沌升级：敬请期待。</p>
+    </div>
+    <div id="chaosMsPane" class="stat-pane" hidden>
+      <p class="set-hint">混沌里程碑：1 保留自动购买器；2 自动购买最大 VCV；3 保留累计献祭；4 经验加成；5 自动 EXU12-14/51；7 开局 10000 细胞；10 自动 VCV 提升；30 地脉提升不重置细胞；50 环境上限不消耗细胞；70 声望次数×15；100 自动混沌；200 被动混沌。</p>
+    </div>
+  </section>
+
   <section id="tab-stat" class="tab-panel">
     <div class="nc-head">
       <h2>统 计</h2>
@@ -721,9 +775,10 @@
           <select id="langSel">
             <option value="zh">中文</option>
             <option value="en">English</option>
+            <option value="la">Latīna</option>
           </select>
         </label>
-        <p class="set-hint">English translation covers the main interface; some long descriptions may remain Chinese.</p>
+        <p class="set-hint">English and Latīna cover the main interface; Latin long vowels are marked with macrons.</p>
       </div>
       <div class="set-card">
         <h3>确认弹窗</h3>
@@ -736,8 +791,12 @@
     <div class="set-card" style="margin-top:10px">
       <h3>更新日志</h3>
       <details>
-        <summary>build v60 / GDD v0.68</summary>
-        <p class="set-hint">EXU41-45 同行、EXU51 在 EXU43 正下方；武器/饰品切换改为直接绑定并兼容旧存档。</p>
+        <summary>build v76 / GDD v0.84</summary>
+        <p class="set-hint">新增拉丁语（Latīna），全部界面与动态文本本地化，长元音以 macron 标注。</p>
+      </details>
+      <details>
+        <summary>build v75 / GDD v0.83</summary>
+        <p class="set-hint">混沌卡片统一 #f26d21；语言接口改为稳定 key-value（tKey）。</p>
       </details>
       <details>
         <summary>build v29 / GDD v0.37</summary>
@@ -789,7 +848,7 @@
     <div class="goal-text" id="goalText">0 / 1e100 细胞</div>
   </div>
   <p class="foot">
-    <b>build v60</b> · 价格按「已购买次数」计 · 花只提高该级购买倍率，不影响价格 · 含地脉献祭 · 支持 Ⅵ→Ⅰ 购买最大 · 声望层 15 个升级 + 自动购买器 + 挑战 NC1~NC12 + RC1~RC12 + 地核 + 战斗 + 地脉之力 VCV + 统计 + 设置 + 天神 · 多文件<br>
+    <b>build v76</b> · 价格按「已购买次数」计 · 花只提高该级购买倍率，不影响价格 · 含地脉献祭 · 支持 Ⅵ→Ⅰ 购买最大 · 声望层 15 个升级 + 自动购买器 + 挑战 NC1~NC12 + RC1~RC12 + 地核 + 战斗 + 混沌 + 地脉之力 VCV + 统计 + 设置 + 天神 · 多文件<br>
     每一级地脉每秒产出 20 个下级（Ⅰ 产细胞）· 软上限只作用于一级：有效 = k×(n/k)<sup>0.75</sup>，二级以上按原数量<br>
     每次环境提升额外给全部地脉 ×1.25<sup>(1+0.5×花)</sup> · 每买一座地脉，该级自己的倍率 ×2×log10(10+10×花)（价格不变） · 花的价格 = 2+5×花 级地脉提升<br>
     数值用 {msg, layer} 表示：1e2000 = {msg:2000, layer:1}，不再有 1e308 上限 · 地脉献祭：清空一至五级，把一级数量换成 Ⅵ 的 ×(lg n)<sup>2</sup>（价格、购买次数保留）
@@ -820,18 +879,21 @@
 </div>
 <div class="toast" id="toast"></div>
 
-<script src="num.js"></script>
-<script src="config.js"></script>
-<script src="en.js"></script>
-<script src="zh.js"></script>
-<script src="03-state.js"></script>
-<script src="vein.js"></script>
-<script src="reputation.js"></script>
-<script src="challenge.js"></script>
-<script src="mundis.js"></script>
-<script src="automation.js"></script>
-<script src="battle.js"></script>
-<script src="ui.js"></script>
-<script src="main.js"></script>
+<script src="js/num.js"></script>
+<script src="js/config.js"></script>
+<script src="js/en.js"></script>
+<script src="js/zh.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/la.js"></script>
+<script src="js/03-state.js"></script>
+<script src="js/vein.js"></script>
+<script src="js/reputation.js"></script>
+<script src="js/challenge.js"></script>
+<script src="js/mundis.js"></script>
+<script src="js/automation.js"></script>
+<script src="js/battle.js"></script>
+<script src="js/chaos.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/main.js"></script>
 </body>
 </html>

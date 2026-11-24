@@ -83,3 +83,8 @@ Object.assign(EN_TEXT, {
     'ru32 · 十重上限': 'ru32 · Tenfold Cap', 'ru33 · 廉价之花': 'ru33 · Cheap Flower',
     'ru34 · 极速挑战': 'ru34 · Speedrun', 'ru35 · 血祭': 'ru35 · Blood Sacrifice'
   });
+
+Object.assign(EN_TEXT, {
+  '等级': 'Level', '生命': 'HP', '攻击': 'ATK', '防御': 'DEF', '暴击': 'Crit',
+  '发起攻击': 'Attack'
+});

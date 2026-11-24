@@ -253,7 +253,7 @@ function buyMaxTiers() {
 
   function showRcBanner(n) {
     el.ncBanner.hidden = true;
-    showStamp(RC_DEFS[n - 1].key + ' · ' + (S.lang === 'en' ? RC_DEFS[n - 1].enName : RC_DEFS[n - 1].name));
+    showStamp(RC_DEFS[n - 1].key + ' · ' + tr(RC_DEFS[n - 1].name, RC_DEFS[n - 1].enName));
   }
 
   function completeRC() {

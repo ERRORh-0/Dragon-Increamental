@@ -122,11 +122,11 @@
       S.rcMax[S.rcActive - 1] = S.rcMax[S.rcActive - 1] === null ? S.cells.clone() : BN.max(S.rcMax[S.rcActive - 1], S.cells);
       if (!S.rcNotified && S.cells.cmp(RC_TARGET[S.rcActive - 1]) >= 0) {
         S.rcNotified = true;
-        notice(RC_DEFS[S.rcActive - 1].key + ' 可以完成');
+        notice(RC_DEFS[S.rcActive - 1].key + tr(' 可以完成'));
       }
-      if (S.rcActive === 3 && S.rcGameRun.cmp(0.1) >= 0 && S.cells.cmp(RC_TARGET[2]) < 0) {
+      if (S.rcActive === 3 && S.rcRunTime >= 100 && S.cells.cmp(RC_TARGET[2]) < 0) {
         exitRC();
-        say('RC3 结束：游戏内时间达到 0.1 秒');
+        say(tr('RC3 结束：现实时间达到 100 秒'));
       }
       if (S.rcActive === 11) {
         S.rcSeqT += realDt;
@@ -137,7 +137,7 @@
       }
       if (S.rcActive === 12 && S.rcRunTime > 10 && S.cells.cmp(RC_TARGET[11]) < 0) {
         exitRC();
-        say('RC12 结束：超过 10 秒');
+        say(tr('RC12 结束：超过 10 秒'));
       }
     }
     if (S.ncActive) {
@@ -147,14 +147,14 @@
       S.ncMax[ci] = S.ncMax[ci] === null ? S.cells.clone() : BN.max(S.ncMax[ci], S.cells);
       if (!S.ncNotified && S.cells.cmp(1e100) >= 0) {
         S.ncNotified = true;
-        notice(NC_DEFS[ci].key + ' 可以完成');
+        notice(NC_DEFS[ci].key + tr(' 可以完成'));
       }
       if (S.cells.cmp(1e100) < 0 && ncOn(11) && S.ncAnti.cmp(S.cells) > 0) {
         failNC();
       }
     }
     battleCheckUnlocks();
-    battleTick(realDt);
+    battleTick(realDt, d.toNumber());
   }
 
   function actionEtas() {

@@ -37,8 +37,27 @@ const BATTLE_TYPES = [
 function battleCheckUnlocks() {
   if (!S.battleUnlocked && S.renown.cmp(BATTLE_TARGET) >= 0) S.battleUnlocked = true;
   if (!S.vcv4Unlocked && S.nucleusIn && S.rcActive === 5 && S.cells.cmp(VCV4_TARGET) >= 0) S.vcv4Unlocked = true;
+  if (!S.vcv5Unlocked && S.nucleusIn && S.cap === 0 && S.ley <= S.renFreeLey && S.flower === 0 &&
+      S.cells.cmp(BN.from({ msg: 800, layer: 1 })) >= 0) S.vcv5Unlocked = true;
   if (!S.battle.exu42Unlocked && S.rcActive === 1 && S.flower === 0 &&
       S.cells.cmp(BN.from({ msg: 6000, layer: 1 })) >= 0) S.battle.exu42Unlocked = true;
+  if (!S.mundis1e1000Seen && S.renown.cmp(BN.from({ msg: 1000, layer: 1 })) >= 0) {
+    S.mundis1e1000Seen = true;
+    S.mundisSpecialLines = [
+      '你发展的速度比我想象的快，但仍然远不及天神。',
+      '天神并不总是都会认可你。',
+      '祂们中的部分会以毁灭为目标。',
+      '躲好，不要让祂们找到你。',
+      '除非你做好了万全的准备。'
+    ];
+    S.mundisSpecialIndex = 0;
+    S.mundisSpecialLine = null;
+    S.mundisDialogActive = true;
+    S.mundisDialogIndex = 0;
+    S.mundisSeen = true;
+  }
+  if (!S.chaosUnlocked && S.renown.cmp(BN.from({ msg: 1000, layer: 1 })) >= 0 &&
+      S.cells.cmp(BN.from({ msg: 80000, layer: 1 })) >= 0) S.chaosUnlocked = true;
 }
 
 function battleExuUnlocked(i) {
@@ -46,7 +65,8 @@ function battleExuUnlocked(i) {
   if (i === 16) return S.battle.exu42Unlocked;
   if (i === 17) return S.battle.level >= 2;
   if (i === 18) return S.battle.weapons.length >= 5;
-  if (i === 19) return S.renown.cmp(BN.from({ msg: 1000, layer: 1 })) >= 0;
+  if (i === 19) return S.renown.cmp(BN.from({ msg: 1000, layer: 1 })) >= 0 &&
+    S.cells.cmp(BN.from({ msg: 80000, layer: 1 })) >= 0;
   if (i === 20) return !!S.battle.exu[16];
   return true;
 }
@@ -78,6 +98,35 @@ function monsterPrefix(r) {
   return '普通的';
 }
 
+/* 拉丁/英语显示名：前缀形容词与基础名性数一致；未知语言回退中文。 */
+const MONSTER_GENDER = {
+  '可疑细胞': 'f', '史莱姆统帅': 'm', '巨石': 'n', '嗜血狂蝠': 'm',
+  '海胆': 'm', '黄色史莱姆': 'm', '鬼魂': 'n', '幼年龙蜥': 'f',
+  '蜘蛛': 'f', '红色史莱姆': 'm', '荒原幽魂': 'f', '无名灵魂': 'f',
+  '绿色史莱姆': 'm', '蓝色史莱姆': 'm'
+};
+const MONSTER_ADJ = {
+  '星辰的': { m: 'Stēllāris', f: 'Stēllāris', n: 'Stēllāre' },
+  '超神的': { m: 'Superdīvīnus', f: 'Superdīvīna', n: 'Superdīvīnum' },
+  '深渊的': { m: 'Abyssālis', f: 'Abyssālis', n: 'Abyssāle' },
+  '传奇的': { m: 'Legendārius', f: 'Legendāria', n: 'Legendārium' },
+  '古老的': { m: 'Antīquus', f: 'Antīqua', n: 'Antīquum' },
+  '罕见的': { m: 'Rārus', f: 'Rāra', n: 'Rārum' },
+  '稀有的': { m: 'Rārior', f: 'Rārior', n: 'Rārius' },
+  '普通的': { m: 'Commūnis', f: 'Commūnis', n: 'Commūne' }
+};
+
+function monsterDisplayName(m) {
+  const base = m.baseName || m.name;
+  if (langCode() !== 'la') return m.name;
+  let prefix = m.prefix;
+  if (!prefix && m.baseName && m.name && m.name !== m.baseName && m.name.endsWith(m.baseName)) {
+    prefix = m.name.slice(0, m.name.length - m.baseName.length);
+  }
+  const adj = prefix && MONSTER_ADJ[prefix] ? MONSTER_ADJ[prefix][MONSTER_GENDER[base] || 'n'] : '';
+  return tr(base) + (adj ? ' ' + adj : '');
+}
+
 function rollRarity() {
   const a = 1 + Math.floor(Math.random() * 100);
   let r;
@@ -102,8 +151,9 @@ function spawnBattleMonster() {
   for (const p of pool) { pick -= p.weight; if (pick <= 0) { chosen = p; break; } }
   const rarity = rollRarity();
   const st = monsterStats(type, S.battle.level, rarity);
+  const prefix = monsterPrefix(rarity);
   const m = {
-    id: S.battle.nextId++, type, name: monsterPrefix(rarity) + chosen.name, baseName: chosen.name, level: S.battle.level,
+    id: S.battle.nextId++, type, name: prefix + chosen.name, baseName: chosen.name, prefix: prefix, level: S.battle.level,
     hp: st.hp, maxHp: st.hp, atk: st.atk, def: st.def, atkTimer: 0, drop: chosen.drop, rarity: rarity
   };
   S.battle.monsters.push(m);
@@ -158,6 +208,7 @@ function battleKill(m) {
   if (S.battle.exu[15]) gain = Math.floor(gain * Math.pow(S.battle.level + 2, 2));
   if (S.battle.exu[16]) gain *= Math.pow(2, S.battle.exu[16]);
   if (S.battle.exu[20]) gain *= Math.pow(2, S.battle.exu[20]);
+  if (typeof gemBonuses === 'function') gain *= gemBonuses().xp;
   S.battle.kills += 1;
   if (m.maxHp > 100) S.battle.hp100Kill = true;
   S.battle.xp = safeNum(S.battle.xp + gain);
@@ -267,10 +318,10 @@ function battleAttackTick(extra) {
   }
 }
 
-function battleTick(dt) {
+function battleTick(dt, spawnDt) {
   if (!S.battleUnlocked) return;
   if (S.battle.spawnOn) {
-    S.battle.spawnTimer -= dt * (S.battle.exu[11] ? 5 : 1);
+    S.battle.spawnTimer -= (spawnDt === undefined ? dt : spawnDt) * (S.battle.exu[11] ? 5 : 1);
     if (S.battle.spawnTimer <= 0 && S.battle.monsters.length < 3) {
       spawnBattleMonster();
       S.battle.spawnTimer = (10 + Math.random() * 10) / (S.battle.exu[11] ? 5 : 1);
@@ -297,6 +348,22 @@ function battleTick(dt) {
       }
     }
   }
+}
+
+function battleEquipWeapon(w) {
+  if (!S.battle.exu[8] || !S.battle.weapons.includes(w)) return false;
+  S.battle.weapon = w;
+  return true;
+}
+function battleEquipAccessory(a) {
+  if (!S.battle.exu[18] || !S.battle.accessories.includes(a)) return false;
+  S.battle.accessory = a;
+  return true;
+}
+
+if (typeof window !== 'undefined') {
+  window.battleEquipWeapon = battleEquipWeapon;
+  window.battleEquipAccessory = battleEquipAccessory;
 }
 
 function battleFlee() {
@@ -346,6 +413,10 @@ function buyBattleExu(i) {
   } else if (i === 4) {
     S.battle.level += 1;
     for (let k = 0; k < 4; k++) S.battle.exu[k] = 0;
+    S.battle.maxHp = 10;
+    S.battle.hp = 10;
+    S.battle.atk = 10;
+    S.battle.def = 1;
   } else if (i === 5) {
     S.battle.crit = true;
   } else if (i === 7) {
